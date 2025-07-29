@@ -43,7 +43,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Static files
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static('./uploads'));
 
 // Database connection
 mongoose.connect(

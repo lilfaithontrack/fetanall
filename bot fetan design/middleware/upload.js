@@ -5,11 +5,11 @@ const fs = require('fs');
 
 // Ensure upload directories exist
 const uploadDirs = [
-  'uploads/posts',
-  'uploads/products', 
-  'uploads/gallery',
-  'uploads/payments',
-  'uploads/screenshots'
+  './uploads/posts',
+  './uploads/products', 
+  './uploads/gallery',
+  './uploads/payments',
+  './uploads/screenshots'
 ];
 
 uploadDirs.forEach(dir => {
@@ -21,7 +21,7 @@ uploadDirs.forEach(dir => {
 // Configure storage
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    let uploadPath = 'uploads/';
+    let uploadPath = './uploads/';
     
     // Determine upload path based on route
     if (req.route.path.includes('/posts')) {
