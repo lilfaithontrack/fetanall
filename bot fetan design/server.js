@@ -26,7 +26,10 @@ const telegramBot = require('./telegram/bot');
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:4000', 'https://*.replit.dev', 'https://*.replit.app'],
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

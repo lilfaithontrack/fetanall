@@ -1,0 +1,214 @@
+
+import React, { useState, useEffect } from 'react'
+import { useAuth } from '../contexts/AuthContext'
+import axios from 'axios'
+
+const Products = () => {
+  const { user, getDiscountPercentage } = useAuth()
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [cart, setCart] = useState([])
+
+  useEffect(() => {
+    fetchProducts()
+    loadCart()
+  }, [])
+
+  const fetchProducts = async () => {
+    try {
+      // In a real app, you'd fetch from your API
+      // For demo purposes, we'll use mock data
+      const mockProducts = [
+        {
+          id: 1,
+          name: 'Premium Logo Design',
+          description: 'Professional logo design with unlimited revisions',
+          price: 99,
+          image: 'https://via.placeholder.com/300x200?text=Logo+Design',
+          category: 'Logo Design',
+          rating: 4.8,
+          reviews: 124
+        },
+        {
+          id: 2,
+          name: 'Business Card Template',
+          description: 'Modern business card template pack',
+          price: 29,
+          image: 'https://via.placeholder.com/300x200?text=Business+Cards',
+          category: 'Templates',
+          rating: 4.6,
+          reviews: 89
+        },
+        {
+          id: 3,
+          name: 'Social Media Kit',
+          description: 'Complete social media design kit',
+          price: 79,
+          image: 'https://via.placeholder.com/300x200?text=Social+Media',
+          category: 'Social Media',
+          rating: 4.9,
+          reviews: 156
+        },
+        {
+          id: 4,
+          name: 'Website UI Kit',
+          description: 'Modern website UI components and templates',
+          price: 149,
+          image: 'https://via.placeholder.com/300x200?text=UI+Kit',
+          category: 'Web Design',
+          rating: 4.7,
+          reviews: 203
+        }
+      ]
+      
+      setProducts(mockProducts)
+    } catch (error) {
+      console.error('Failed to fetch products:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadCart = () => {
+    const savedCart = localStorage.getItem('fetanCart')
+    if (savedCart) {
+      setCart(JSON.parse(savedCart))
+    }
+  }
+
+  const addToCart = (product) => {
+    const existingItem = cart.find(item => item.id === product.id)
+    let newCart
+
+    if (existingItem) {
+      newCart = cart.map(item =>
+        item.id === product.id
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      )
+    } else {
+      newCart = [...cart, { ...product, quantity: 1 }]
+    }
+
+    setCart(newCart)
+    localStorage.setItem('fetanCart', JSON.stringify(newCart))
+  }
+
+  const getDiscountedPrice = (price) => {
+    const discount = getDiscountPercentage()
+    return discount > 0 ? price - (price * discount / 100) : price
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Premium Products</h1>
+        <p className="text-lg text-gray-600">
+          Exclusive digital products for our subscribers
+        </p>
+        
+        {getDiscountPercentage() > 0 && (
+          <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-green-800 font-medium">
+              🎉 Your subscriber discount: {getDiscountPercentage()}% OFF all products!
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {products.map((product) => {
+          const originalPrice = product.price
+          const discountedPrice = getDiscountedPrice(originalPrice)
+          const hasDiscount = discountedPrice < originalPrice
+
+          return (
+            <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-48 object-cover"
+              />
+              
+              <div className="p-6">
+                <div className="mb-2">
+                  <span className="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">
+                    {product.category}
+                  </span>
+                </div>
+                
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {product.name}
+                </h3>
+                
+                <p className="text-gray-600 text-sm mb-4">
+                  {product.description}
+                </p>
+                
+                <div className="flex items-center mb-4">
+                  <div className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                      <svg
+                        key={i}
+                        className={`w-4 h-4 ${
+                          i < Math.floor(product.rating) ? 'text-yellow-400' : 'text-gray-300'
+                        }`}
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <span className="ml-2 text-sm text-gray-600">
+                    {product.rating} ({product.reviews} reviews)
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-2xl font-bold text-indigo-600">
+                      ${discountedPrice.toFixed(2)}
+                    </span>
+                    {hasDiscount && (
+                      <span className="text-lg text-gray-500 line-through">
+                        ${originalPrice.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={() => addToCart(product)}
+                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                  >
+                    Add to Cart
+                  </button>
+                </div>
+                
+                {hasDiscount && (
+                  <div className="mt-2">
+                    <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                      Save ${(originalPrice - discountedPrice).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+export default Products

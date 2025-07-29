@@ -6,3 +6,33 @@ channel = "stable-25_05"
 
 [deployment]
 run = ["sh", "-c", "npm run dev "]
+
+[workflows]
+runButton = "Start Frontend Webapp"
+
+[[workflows.workflow]]
+name = "Start Backend"
+author = 45674884
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd \"bot fetan design\" && npm install && npm start"
+
+[[workflows.workflow]]
+name = "Start Admin Panel"
+author = 45674884
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd admin-panel && npm install && npm run dev"
+
+[[workflows.workflow]]
+name = "Start Frontend Webapp"
+author = 45674884
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd frontend-webapp && npm install && npm run dev"
