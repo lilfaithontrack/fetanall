@@ -1,4 +1,3 @@
-
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
@@ -7,6 +6,7 @@ import Home from './pages/Home'
 import Products from './pages/Products'
 import Gallery from './pages/Gallery'
 import Cart from './pages/Cart'
+import Checkout from './pages/Checkout'
 import Profile from './pages/Profile'
 import AuthGuard from './components/AuthGuard'
 
@@ -32,6 +32,7 @@ function App() {
                 <Cart />
               </AuthGuard>
             } />
+            <Route path="checkout" element={<Checkout />} />
             <Route path="profile" element={
               <AuthGuard>
                 <Profile />

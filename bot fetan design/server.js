@@ -67,11 +67,11 @@ app.use('/api/users', userRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/levels', levelRoutes);
 app.use('/api/payment-methods', paymentMethodRoutes);
+app.use('/api/orders', orderRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/agents', agentRoutes);
 app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
 app.use('/api/telegram', telegramRoutes);
 app.use('/api/posts', postRoutes);
 
@@ -121,4 +121,4 @@ process.on('SIGINT', () => {
     console.log('MongoDB connection closed');
     process.exit(0);
   });
-}); 
+});

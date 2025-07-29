@@ -16,52 +16,9 @@ const Products = () => {
 
   const fetchProducts = async () => {
     try {
-      // In a real app, you'd fetch from your API
-      // For demo purposes, we'll use mock data
-      const mockProducts = [
-        {
-          id: 1,
-          name: 'Premium Logo Design',
-          description: 'Professional logo design with unlimited revisions',
-          price: 99,
-          image: 'https://via.placeholder.com/300x200?text=Logo+Design',
-          category: 'Logo Design',
-          rating: 4.8,
-          reviews: 124
-        },
-        {
-          id: 2,
-          name: 'Business Card Template',
-          description: 'Modern business card template pack',
-          price: 29,
-          image: 'https://via.placeholder.com/300x200?text=Business+Cards',
-          category: 'Templates',
-          rating: 4.6,
-          reviews: 89
-        },
-        {
-          id: 3,
-          name: 'Social Media Kit',
-          description: 'Complete social media design kit',
-          price: 79,
-          image: 'https://via.placeholder.com/300x200?text=Social+Media',
-          category: 'Social Media',
-          rating: 4.9,
-          reviews: 156
-        },
-        {
-          id: 4,
-          name: 'Website UI Kit',
-          description: 'Modern website UI components and templates',
-          price: 149,
-          image: 'https://via.placeholder.com/300x200?text=UI+Kit',
-          category: 'Web Design',
-          rating: 4.7,
-          reviews: 203
-        }
-      ]
-      
-      setProducts(mockProducts)
+      const response = await axios.get('http://0.0.0.0:5000/api/products')
+      if (response.data.success) {
+        setProducts(response.data.products)
     } catch (error) {
       console.error('Failed to fetch products:', error)
     } finally {
@@ -128,14 +85,15 @@ const Products = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {products.map((product) => {
-          const originalPrice = product.price
-          const discountedPrice = getDiscountedPrice(originalPrice)
-          const hasDiscount = discountedPrice < originalPrice
+          const originalPrice = product.originalPrice || product.price
+          const discountedPrice = getDiscountedPrice(product.price)
+          const hasDiscount = discountedPrice < product.price
+          const primaryImage = product.images?.find(img => img.isPrimary) || product.images?.[0]
 
           return (
-            <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+            <div key={product._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
               <img
-                src={product.image}
+                src={primaryImage ? `http://0.0.0.0:5000${primaryImage.url}` : 'https://via.placeholder.com/300x200?text=No+Image'}
                 alt={product.name}
                 className="w-full h-48 object-cover"
               />
@@ -145,6 +103,11 @@ const Products = () => {
                   <span className="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">
                     {product.category}
                   </span>
+                  {product.featured && (
+                    <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full ml-2">
+                      Featured
+                    </span>
+                  )}
                 </div>
                 
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -161,7 +124,7 @@ const Products = () => {
                       <svg
                         key={i}
                         className={`w-4 h-4 ${
-                          i < Math.floor(product.rating) ? 'text-yellow-400' : 'text-gray-300'
+                          i < Math.floor(product.rating?.average || 0) ? 'text-yellow-400' : 'text-gray-300'
                         }`}
                         fill="currentColor"
                         viewBox="0 0 20 20"
@@ -171,7 +134,7 @@ const Products = () => {
                     ))}
                   </div>
                   <span className="ml-2 text-sm text-gray-600">
-                    {product.rating} ({product.reviews} reviews)
+                    {(product.rating?.average || 0).toFixed(1)} ({product.rating?.count || 0} reviews)
                   </span>
                 </div>
                 
@@ -182,26 +145,34 @@ const Products = () => {
                     </span>
                     {hasDiscount && (
                       <span className="text-lg text-gray-500 line-through">
-                        ${originalPrice.toFixed(2)}
+                        ${product.price.toFixed(2)}
                       </span>
                     )}
                   </div>
                   
                   <button
                     onClick={() => addToCart(product)}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                    disabled={product.stock <= 0}
+                    className={`px-4 py-2 rounded-lg transition-colors ${
+                      product.stock <= 0 
+                        ? 'bg-gray-400 text-white cursor-not-allowed' 
+                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    }`}
                   >
-                    Add to Cart
+                    {product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
                   </button>
                 </div>
                 
-                {hasDiscount && (
-                  <div className="mt-2">
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-sm text-gray-500">
+                    Stock: {product.stock}
+                  </span>
+                  {hasDiscount && (
                     <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                      Save ${(originalPrice - discountedPrice).toFixed(2)}
+                      Save ${(product.price - discountedPrice).toFixed(2)}
                     </span>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           )

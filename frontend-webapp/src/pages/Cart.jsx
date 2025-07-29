@@ -213,9 +213,12 @@ const Cart = () => {
               </div>
             )}
             
-            <button className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium mt-6 hover:bg-indigo-700 transition-colors">
+            <a
+              href="/checkout"
+              className="block w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium mt-6 hover:bg-indigo-700 transition-colors text-center"
+            >
               Proceed to Checkout
-            </button>
+            </a>
             
             <p className="text-xs text-gray-500 text-center mt-4">
               Secure checkout powered by Telegram payments

@@ -11,6 +11,7 @@ import Orders from './pages/Orders'
 import Gallery from './pages/Gallery'
 import ProtectedRoute from './components/ProtectedRoute'
 import Posts from './pages/Posts'
+import PaymentMethods from './pages/PaymentMethods'
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path="users" element={<Users />} />
             <Route path="subscriptions" element={<Subscriptions />} />
             <Route path="products" element={<Products />} />
+            <Route path="payment-methods" element={<PaymentMethods />} />
             <Route path="orders" element={<Orders />} />
             <Route path="gallery" element={<Gallery />} />
             <Route path="/posts" element={<Posts />} />
