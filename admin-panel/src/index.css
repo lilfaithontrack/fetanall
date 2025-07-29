@@ -2,3 +2,87 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #fefefe;
+}
+
+.admin-gradient {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.admin-card {
+  background: white;
+  border: 1px solid #fee2e2;
+  box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.1);
+}
+
+.admin-button-primary {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.admin-button-primary:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.admin-sidebar {
+  background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 2px 0 10px rgba(220, 38, 38, 0.1);
+}
+
+.admin-nav-item {
+  color: rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+}
+
+.admin-nav-item:hover,
+.admin-nav-item.active {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.admin-table {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #fee2e2;
+}
+
+.admin-table th {
+  background: #fef2f2;
+  color: #991b1b;
+  font-weight: 600;
+}
+
+.admin-table td {
+  border-bottom: 1px solid #fee2e2;
+}
+
+.admin-stat-card {
+  background: white;
+  border-left: 4px solid #dc2626;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.1);
+}
+
+.admin-badge-active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-badge-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.admin-badge-expired {
+  background: #fee2e2;
+  color: #991b1b;
+}

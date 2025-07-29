@@ -1,3 +1,80 @@
+
+const express = require('express');
+const { body, validationResult } = require('express-validator');
+const Gallery = require('../models/Gallery');
+
+const router = express.Router();
+
+// Get all gallery items with pagination
+router.get('/', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const category = req.query.category || '';
+    const search = req.query.search || '';
+
+    const skip = (page - 1) * limit;
+    
+    // Build filter object
+    const filter = { isActive: true };
+    
+    if (category) {
+      filter.category = category;
+    }
+    
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { tags: { $in: [new RegExp(search, 'i')] } }
+      ];
+    }
+
+    const galleries = await Gallery.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Gallery.countDocuments(filter);
+    const totalPages = Math.ceil(total / limit);
+
+    res.json({
+      success: true,
+      galleries,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages
+      }
+    });
+  } catch (error) {
+    console.error('Get gallery error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get gallery item by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const gallery = await Gallery.findById(req.params.id);
+
+    if (!gallery) {
+      return res.status(404).json({ error: 'Gallery item not found' });
+    }
+
+    res.json({
+      success: true,
+      gallery
+    });
+  } catch (error) {
+    console.error('Get gallery item error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+module.exports = router;
+
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Gallery = require('../models/Gallery');

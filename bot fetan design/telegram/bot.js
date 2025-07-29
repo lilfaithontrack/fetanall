@@ -18,9 +18,9 @@ const mainMenuKeyboard = {
   reply_markup: {
     keyboard: [
       ['📋 Register', '💎 Subscriptions'],
-      ['🖼️ Gallery', '🛍️ Products'],
-      ['🛒 My Cart', '📦 My Orders'],
-      ['👥 Refer Friends', '💰 Payment Methods'],
+      ['🌐 Open Fetan App', '🖼️ Gallery'],
+      ['🛍️ Products', '🛒 My Cart'],
+      ['📦 My Orders', '👥 Refer Friends'],
       ['ℹ️ Help', '📞 Contact']
     ],
     resize_keyboard: true
@@ -596,6 +596,69 @@ bot.on('photo', async (msg) => {
   }
 });
 
+// Handle webapp access
+bot.onText(/🌐 Open Fetan App/, async (msg) => {
+  const chatId = msg.chat.id;
+  const telegramId = msg.from.id.toString();
+
+  try {
+    const user = await User.findOne({ telegramId });
+    
+    if (!user || !user.isRegistered) {
+      bot.sendMessage(chatId, 'Please register first to access the Fetan Design app.');
+      return;
+    }
+
+    // Generate a simple auth token (in production, use proper JWT)
+    const authToken = Buffer.from(`${telegramId}_${Date.now()}`).toString('base64');
+    
+    // Create webapp URL with auth parameters
+    const webappUrl = `${process.env.WEBAPP_URL || 'https://your-repl-url.replit.app'}?telegram_id=${telegramId}&auth_token=${authToken}&telegram_username=${user.username || ''}&telegram_name=${encodeURIComponent(user.fullName)}`;
+    
+    const keyboard = {
+      reply_markup: {
+        inline_keyboard: [
+          [{
+            text: '🌐 Open Fetan Design App',
+            web_app: { url: webappUrl }
+          }],
+          [{
+            text: '🔗 Open in Browser',
+            url: webappUrl
+          }]
+        ]
+      }
+    };
+
+    bot.sendMessage(chatId, 
+      `🎨 Welcome to Fetan Design!\n\n` +
+      `Click the button below to access your personalized design platform.\n\n` +
+      `${user.subscriptionStatus === 'active' ? 
+        '✅ You have active subscription - enjoy your benefits!' : 
+        '⚠️ Subscribe to unlock premium features'
+      }`,
+      keyboard
+    );
+  } catch (error) {
+    console.error('Webapp access error:', error);
+    bot.sendMessage(chatId, 'Sorry, something went wrong while generating your access link.');
+  }
+});
+
+// Update main menu to include webapp access
+const mainMenuKeyboard = {
+  reply_markup: {
+    keyboard: [
+      ['📋 Register', '💎 Subscriptions'],
+      ['🌐 Open Fetan App', '🖼️ Gallery'],
+      ['🛍️ Products', '🛒 My Cart'],
+      ['📦 My Orders', '👥 Refer Friends'],
+      ['ℹ️ Help', '📞 Contact']
+    ],
+    resize_keyboard: true
+  }
+};
+
 // Handle help
 bot.onText(/ℹ️ Help/, (msg) => {
   const chatId = msg.chat.id;
@@ -605,12 +668,12 @@ bot.onText(/ℹ️ Help/, (msg) => {
 
 📋 Register - Complete your registration with phone number
 💎 Subscriptions - View and purchase subscription plans
+🌐 Open Fetan App - Access the web application
 🖼️ Gallery - Browse our design gallery
 🛍️ Products - Shop our products with subscription discounts
 🛒 My Cart - View and manage your shopping cart
 📦 My Orders - Check your order status
 👥 Refer Friends - Share your referral code
-💰 Payment Methods - View available payment options
 
 For support, contact our admin team.
   `;

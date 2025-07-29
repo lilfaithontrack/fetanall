@@ -247,6 +247,54 @@ router.post('/:id/reject-payment', verifyAdminToken, async (req, res) => {
     }
 
     screenshot.status = 'rejected';
+
+
+// Get user by Telegram ID for frontend authentication
+router.get('/telegram/:telegramId', async (req, res) => {
+  try {
+    const { telegramId } = req.params;
+    const authHeader = req.header('Authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Invalid authorization header' });
+    }
+
+    // For now, we'll use a simple token verification
+    // In production, you should implement proper JWT token verification
+    const token = authHeader.replace('Bearer ', '');
+    
+    const user = await User.findOne({ telegramId })
+      .populate('subscription')
+      .populate('level');
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Update last activity
+    await user.updateActivity();
+
+    res.json({
+      success: true,
+      user: {
+        _id: user._id,
+        telegramId: user.telegramId,
+        fullName: user.fullName,
+        phone: user.phone,
+        username: user.username,
+        subscription: user.subscription,
+        subscriptionStatus: user.subscriptionStatus,
+        subscriptionExpiry: user.subscriptionExpiry,
+        referralCode: user.referralCode,
+        cart: user.cart
+      }
+    });
+  } catch (error) {
+    console.error('Get user by Telegram ID error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
     await user.save();
 
     res.json({ success: true, message: 'Payment rejected successfully' });

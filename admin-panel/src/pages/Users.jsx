@@ -1,32 +1,45 @@
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 
 const Users = () => {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
-  const [pagination, setPagination] = useState({})
-  const [currentPage, setCurrentPage] = useState(1)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  })
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [showUserModal, setShowUserModal] = useState(false)
 
   useEffect(() => {
     fetchUsers()
-  }, [currentPage, search, statusFilter])
+  }, [pagination.page, search, statusFilter])
 
   const fetchUsers = async () => {
-    setLoading(true)
     try {
-      const params = {
-        page: currentPage,
-        limit: 10,
-        search,
-        status: statusFilter
-      }
-      
-      const response = await axios.get('/api/users', { params })
+      setLoading(true)
+      const response = await axios.get('/api/users', {
+        params: {
+          page: pagination.page,
+          limit: pagination.limit,
+          search,
+          status: statusFilter
+        },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      })
       setUsers(response.data.users)
-      setPagination(response.data.pagination)
+      setPagination(prev => ({
+        ...prev,
+        total: response.data.pagination.total,
+        totalPages: response.data.pagination.totalPages
+      }))
     } catch (error) {
       console.error('Failed to fetch users:', error)
     } finally {
@@ -34,33 +47,62 @@ const Users = () => {
     }
   }
 
-  const handleStatusUpdate = async (userId, newStatus) => {
+  const handleUserClick = async (userId) => {
     try {
-      await axios.put(`/api/users/${userId}`, {
-        subscriptionStatus: newStatus
+      const response = await axios.get(`/api/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+        }
       })
-      fetchUsers()
+      setSelectedUser(response.data)
+      setShowUserModal(true)
     } catch (error) {
-      console.error('Failed to update user status:', error)
+      console.error('Failed to fetch user details:', error)
     }
   }
 
-  const approvePayment = async (userId, screenshotId) => {
+  const handleApprovePayment = async (userId, screenshotId) => {
     try {
-      await axios.post(`/api/users/${userId}/approve-payment`, {
-        screenshotId
-      })
+      await axios.post(`/api/users/${userId}/approve-payment`, 
+        { screenshotId },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+          }
+        }
+      )
       fetchUsers()
+      alert('Payment approved successfully!')
     } catch (error) {
       console.error('Failed to approve payment:', error)
+      alert('Failed to approve payment')
+    }
+  }
+
+  const handleUpdateUserStatus = async (userId, status) => {
+    try {
+      await axios.put(`/api/users/${userId}`, 
+        { subscriptionStatus: status },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+          }
+        }
+      )
+      fetchUsers()
+      setShowUserModal(false)
+      alert('User status updated successfully!')
+    } catch (error) {
+      console.error('Failed to update user:', error)
+      alert('Failed to update user status')
     }
   }
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Users Management</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <h1 className="text-3xl font-bold text-gray-900">Users Management</h1>
+        <p className="mt-2 text-gray-600">
           Manage bot users, subscriptions, and payments
         </p>
       </div>
@@ -72,132 +114,195 @@ const Users = () => {
           placeholder="Search users..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          className="block w-full rounded-lg border-red-200 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm"
         />
         
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          className="block w-full rounded-lg border-red-200 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm"
         >
           <option value="">All Status</option>
           <option value="active">Active</option>
           <option value="pending">Pending</option>
           <option value="expired">Expired</option>
         </select>
+
+        <button 
+          onClick={fetchUsers}
+          className="admin-button-primary px-4 py-2 rounded-lg font-medium"
+        >
+          🔄 Refresh
+        </button>
       </div>
 
       {/* Users Table */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <ul className="divide-y divide-gray-200">
-          {loading ? (
-            <li className="px-6 py-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-            </li>
-          ) : users.length === 0 ? (
-            <li className="px-6 py-8 text-center text-gray-500">
-              No users found
-            </li>
-          ) : (
-            users.map((user) => (
-              <li key={user._id} className="px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {user.fullName}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {user.phone} • @{user.username}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        Joined {new Date(user.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
+      <div className="admin-table">
+        <table className="min-w-full divide-y divide-red-200">
+          <thead>
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                User
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                Phone
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                Subscription
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                Joined
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-red-100">
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-4 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
+                </td>
+              </tr>
+            ) : users.map((user) => (
+              <tr key={user._id} className="hover:bg-red-50 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">{user.fullName}</div>
+                    <div className="text-sm text-gray-500">@{user.username || 'N/A'}</div>
                   </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <p className="text-sm text-gray-900">
-                        {user.subscription?.name || 'No subscription'}
-                      </p>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        user.subscriptionStatus === 'active' 
-                          ? 'bg-green-100 text-green-800'
-                          : user.subscriptionStatus === 'pending'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {user.subscriptionStatus}
-                      </span>
-                    </div>
-                    
-                    <select
-                      value={user.subscriptionStatus}
-                      onChange={(e) => handleStatusUpdate(user._id, e.target.value)}
-                      className="text-sm border-gray-300 rounded-md"
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="active">Active</option>
-                      <option value="expired">Expired</option>
-                    </select>
-                  </div>
-                </div>
-                
-                {/* Payment Screenshots */}
-                {user.paymentScreenshots?.filter(s => s.status === 'pending').length > 0 && (
-                  <div className="mt-4 p-3 bg-yellow-50 rounded-md">
-                    <p className="text-sm font-medium text-yellow-800 mb-2">
-                      Pending payment screenshots:
-                    </p>
-                    <div className="flex space-x-2">
-                      {user.paymentScreenshots
-                        .filter(s => s.status === 'pending')
-                        .map((screenshot) => (
-                        <button
-                          key={screenshot._id}
-                          onClick={() => approvePayment(user._id, screenshot._id)}
-                          className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                        >
-                          Approve Payment
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </li>
-            ))
-          )}
-        </ul>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {user.phone}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    user.subscriptionStatus === 'active' ? 'admin-badge-active' :
+                    user.subscriptionStatus === 'pending' ? 'admin-badge-pending' :
+                    'admin-badge-expired'
+                  }`}>
+                    {user.subscriptionStatus}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {user.subscription?.name || 'None'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(user.createdAt).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button
+                    onClick={() => handleUserClick(user._id)}
+                    className="text-red-600 hover:text-red-900 mr-3"
+                  >
+                    View
+                  </button>
+                  <button
+                    onClick={() => handleUpdateUserStatus(user._id, 'active')}
+                    className="text-green-600 hover:text-green-900"
+                  >
+                    Activate
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="mt-6 flex justify-between items-center">
-          <p className="text-sm text-gray-700">
-            Showing {((currentPage - 1) * pagination.limit) + 1} to {Math.min(currentPage * pagination.limit, pagination.total)} of {pagination.total} results
-          </p>
-          
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md disabled:opacity-50"
-            >
-              Previous
-            </button>
+      <div className="mt-6 flex items-center justify-between">
+        <div className="text-sm text-gray-700">
+          Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+            disabled={pagination.page === 1}
+            className="px-3 py-2 text-sm border border-red-200 rounded-lg disabled:opacity-50 hover:bg-red-50"
+          >
+            Previous
+          </button>
+          <button
+            onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+            disabled={pagination.page === pagination.totalPages}
+            className="px-3 py-2 text-sm border border-red-200 rounded-lg disabled:opacity-50 hover:bg-red-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
+      {/* User Details Modal */}
+      {showUserModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 max-h-90vh overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">User Details</h2>
+              <button
+                onClick={() => setShowUserModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
             
-            <span className="px-3 py-2 text-sm bg-indigo-600 text-white rounded-md">
-              {currentPage}
-            </span>
-            
-            <button
-              onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
-              disabled={currentPage === pagination.totalPages}
-              className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md disabled:opacity-50"
-            >
-              Next
-            </button>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Full Name</label>
+                  <p className="text-gray-900">{selectedUser.fullName}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Phone</label>
+                  <p className="text-gray-900">{selectedUser.phone}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Telegram ID</label>
+                  <p className="text-gray-900">{selectedUser.telegramId}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Referral Code</label>
+                  <p className="text-gray-900">{selectedUser.referralCode || 'N/A'}</p>
+                </div>
+              </div>
+
+              {selectedUser.paymentScreenshots && selectedUser.paymentScreenshots.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Payment Screenshots</h3>
+                  <div className="space-y-3">
+                    {selectedUser.paymentScreenshots.map((screenshot, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 border border-red-200 rounded-lg">
+                        <div>
+                          <p className="text-sm text-gray-600">
+                            Uploaded: {new Date(screenshot.uploadedAt).toLocaleDateString()}
+                          </p>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            screenshot.status === 'approved' ? 'admin-badge-active' :
+                            screenshot.status === 'pending' ? 'admin-badge-pending' :
+                            'admin-badge-expired'
+                          }`}>
+                            {screenshot.status}
+                          </span>
+                        </div>
+                        {screenshot.status === 'pending' && (
+                          <button
+                            onClick={() => handleApprovePayment(selectedUser._id, screenshot._id)}
+                            className="admin-button-primary px-3 py-1 text-xs rounded"
+                          >
+                            Approve
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
