@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Product = require('../models/Product');
@@ -18,14 +17,14 @@ router.get('/', async (req, res) => {
     const order = req.query.order === 'asc' ? 1 : -1;
 
     const skip = (page - 1) * limit;
-    
+
     // Build filter object
     const filter = { isActive: true };
-    
+
     if (category) {
       filter.category = category;
     }
-    
+
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -87,25 +86,10 @@ router.get('/:id', async (req, res) => {
 module.exports = router;
 
 const express = require('express');
-const { body, validationResult } = require('express-validator');
-const Product = require('../models/Product');
-
 const router = express.Router();
-
-// Middleware to verify admin token
-const verifyAdminToken = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
-  try {
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.role !== 'admin') return res.status(403).json({ error: 'Access denied. Admin only.' });
-    req.user = decoded;
-    next();
-  } catch (error) {
-    res.status(401).json({ error: 'Invalid token.' });
-  }
-};
+const Product = require('../models/Product');
+const { verifyAdminToken } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
 // Get all products
 router.get('/', async (req, res) => {
@@ -129,22 +113,24 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create product
-router.post('/', verifyAdminToken, [
-  body('name').notEmpty(),
-  body('description').notEmpty(),
-  body('price').isNumeric(),
-  body('originalPrice').isNumeric(),
-  body('category').notEmpty(),
-  body('createdBy').notEmpty()
-], async (req, res) => {
+router.post('/', verifyAdminToken, upload.multiple('images', 10), async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-    const { name, description, price, originalPrice, images, category, tags, stock, featured, subscriptionDiscounts, specifications, createdBy } = req.body;
-    const product = new Product({ name, description, price, originalPrice, images, category, tags, stock, featured, subscriptionDiscounts, specifications, createdBy });
+    const productData = { ...req.body };
+
+    // Handle multiple images
+    if (req.files && req.files.length > 0) {
+      productData.images = req.files.map((file, index) => ({
+        url: `/uploads/${file.path.replace(/\\/g, '/')}`,
+        alt: req.body[`alt_${index}`] || productData.name,
+        isPrimary: index === 0
+      }));
+    }
+
+    const product = new Product(productData);
     await product.save();
-    res.json({ success: true, product });
+    res.status(201).json({ success: true, product });
   } catch (error) {
+    console.error('Create product error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -182,4 +168,4 @@ router.delete('/:id', verifyAdminToken, async (req, res) => {
   }
 });
 
-module.exports = router; 
+module.exports = router;

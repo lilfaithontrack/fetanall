@@ -21,6 +21,7 @@ const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const authRoutes = require('./routes/authRoutes');
 const telegramRoutes = require('./routes/telegramRoutes');
+const postRoutes = require('./routes/postRoutes');
 
 // Import Telegram bot handlers
 const telegramBot = require('./telegram/bot');
@@ -72,6 +73,7 @@ app.use('/api/agents', agentRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/telegram', telegramRoutes);
+app.use('/api/posts', postRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

@@ -18,10 +18,11 @@ const mainMenuKeyboard = {
   reply_markup: {
     keyboard: [
       ['📋 Register', '💎 Subscriptions'],
-      ['🌐 Open Fetan App', '🖼️ Gallery'],
-      ['🛍️ Products', '🛒 My Cart'],
-      ['📦 My Orders', '👥 Refer Friends'],
-      ['ℹ️ Help', '📞 Contact']
+      ['🌐 Open Fetan App', '📰 Latest Posts'],
+      ['🖼️ Gallery', '🛍️ Products'],
+      ['🛒 My Cart', '📦 My Orders'],
+      ['👥 Refer Friends', 'ℹ️ Help'],
+      ['📞 Contact']
     ],
     resize_keyboard: true
   }
@@ -39,7 +40,7 @@ bot.onText(/\/start/, async (msg) => {
   try {
     // Check if user exists
     let user = await User.findOne({ telegramId });
-    
+
     if (!user) {
       // Create new user
       user = new User({
@@ -80,7 +81,7 @@ bot.onText(/📋 Register/, async (msg) => {
 
   try {
     const user = await User.findOne({ telegramId });
-    
+
     if (user && user.isRegistered) {
       bot.sendMessage(chatId, 'You are already registered!', mainMenuKeyboard);
       return;
@@ -88,7 +89,7 @@ bot.onText(/📋 Register/, async (msg) => {
 
     // Set user state to registration
     userStates.set(telegramId, { state: 'registration', step: 'phone' });
-    
+
     bot.sendMessage(chatId, 
       'Please share your phone number to complete registration.\n\n' +
       'Click the button below to share your phone number:',
@@ -116,10 +117,10 @@ bot.on('contact', async (msg) => {
 
   try {
     const userState = userStates.get(telegramId);
-    
+
     if (userState && userState.state === 'registration') {
       const user = await User.findOne({ telegramId });
-      
+
       if (user) {
         user.phone = contact.phone_number;
         user.isRegistered = true;
@@ -160,12 +161,12 @@ bot.onText(/💎 Subscriptions/, async (msg) => {
     }
 
     let message = '💎 Available Subscriptions:\n\n';
-    
+
     subscriptions.forEach((sub, index) => {
       const discountedPrice = sub.getDiscountedPrice();
       const discountText = sub.discountPercentage > 0 ? 
         `\n💥 ${sub.discountPercentage}% OFF!` : '';
-      
+
       message += `${index + 1}. ${sub.name}\n` +
                  `💰 Price: $${sub.price}` +
                  (discountedPrice !== sub.price ? ` → $${discountedPrice}` : '') +
@@ -177,7 +178,7 @@ bot.onText(/💎 Subscriptions/, async (msg) => {
     if (user.subscription) {
       const expiryDate = user.subscriptionExpiry ? 
         new Date(user.subscriptionExpiry).toLocaleDateString() : 'N/A';
-      
+
       message += `\n🎯 Your Current Subscription:\n` +
                  `Plan: ${user.subscription.name}\n` +
                  `Status: ${user.subscriptionStatus}\n` +
@@ -207,14 +208,14 @@ bot.onText(/🖼️ Gallery/, async (msg) => {
 
   try {
     const user = await User.findOne({ telegramId });
-    
+
     if (!user || !user.isRegistered) {
       bot.sendMessage(chatId, 'Please register first to view gallery.');
       return;
     }
 
     const galleries = await Gallery.find({ isActive: true }).limit(10);
-    
+
     if (galleries.length === 0) {
       bot.sendMessage(chatId, 'No gallery items available at the moment.');
       return;
@@ -223,7 +224,7 @@ bot.onText(/🖼️ Gallery/, async (msg) => {
     // Send first gallery item
     const firstItem = galleries[0];
     const caption = `🖼️ ${firstItem.title}\n\n${firstItem.description}`;
-    
+
     const keyboard = {
       reply_markup: {
         inline_keyboard: [
@@ -250,14 +251,14 @@ bot.onText(/🛍️ Products/, async (msg) => {
 
   try {
     const user = await User.findOne({ telegramId }).populate('subscription');
-    
+
     if (!user || !user.isRegistered) {
       bot.sendMessage(chatId, 'Please register first to view products.');
       return;
     }
 
     const products = await Product.find({ isActive: true }).limit(10);
-    
+
     if (products.length === 0) {
       bot.sendMessage(chatId, 'No products available at the moment.');
       return;
@@ -268,13 +269,13 @@ bot.onText(/🛍️ Products/, async (msg) => {
     const price = user.subscription ? 
       firstProduct.getPriceWithDiscount(user.subscription._id) : 
       firstProduct.price;
-    
+
     const caption = `🛍️ ${firstProduct.name}\n\n` +
                    `📝 ${firstProduct.description}\n` +
                    `💰 Price: $${price}\n` +
                    `📦 Stock: ${firstProduct.stock}\n` +
                    `⭐ Rating: ${firstProduct.rating.average}/5 (${firstProduct.rating.count} reviews)`;
-    
+
     const keyboard = {
       reply_markup: {
         inline_keyboard: [
@@ -306,7 +307,7 @@ bot.onText(/🛒 My Cart/, async (msg) => {
 
   try {
     const user = await User.findOne({ telegramId }).populate('cart.product');
-    
+
     if (!user || !user.isRegistered) {
       bot.sendMessage(chatId, 'Please register first to view your cart.');
       return;
@@ -319,14 +320,14 @@ bot.onText(/🛒 My Cart/, async (msg) => {
 
     let total = 0;
     let message = '🛒 Your Cart:\n\n';
-    
+
     user.cart.forEach((item, index) => {
       const price = user.subscription ? 
         item.product.getPriceWithDiscount(user.subscription._id) : 
         item.product.price;
       const itemTotal = price * item.quantity;
       total += itemTotal;
-      
+
       message += `${index + 1}. ${item.product.name}\n` +
                  `   Quantity: ${item.quantity}\n` +
                  `   Price: $${price} x ${item.quantity} = $${itemTotal}\n\n`;
@@ -358,7 +359,7 @@ bot.onText(/📦 My Orders/, async (msg) => {
 
   try {
     const user = await User.findOne({ telegramId }).populate('orders');
-    
+
     if (!user || !user.isRegistered) {
       bot.sendMessage(chatId, 'Please register first to view your orders.');
       return;
@@ -370,7 +371,7 @@ bot.onText(/📦 My Orders/, async (msg) => {
     }
 
     let message = '📦 Your Orders:\n\n';
-    
+
     user.orders.slice(-5).forEach((order, index) => {
       message += `${index + 1}. Order #${order.orderNumber}\n` +
                  `   Status: ${order.status}\n` +
@@ -447,7 +448,7 @@ async function handleSubscription(chatId, telegramId, subscriptionId) {
     }
 
     const discountedPrice = subscription.getDiscountedPrice();
-    
+
     let message = `💎 Subscribe to ${subscription.name}\n\n` +
                   `💰 Price: $${subscription.price}` +
                   (discountedPrice !== subscription.price ? ` → $${discountedPrice}` : '') +
@@ -514,14 +515,14 @@ async function handleCheckout(chatId, telegramId) {
 
     let total = 0;
     let message = '💳 Checkout\n\n';
-    
+
     user.cart.forEach(item => {
       const price = user.subscription ? 
         item.product.getPriceWithDiscount(user.subscription._id) : 
         item.product.price;
       const itemTotal = price * item.quantity;
       total += itemTotal;
-      
+
       message += `• ${item.product.name} x${item.quantity} = $${itemTotal}\n`;
     });
 
@@ -548,7 +549,7 @@ async function handleCheckout(chatId, telegramId) {
 async function handleClearCart(chatId, telegramId) {
   try {
     const user = await User.findOne({ telegramId });
-    
+
     if (user) {
       user.cart = [];
       await user.save();
@@ -568,7 +569,7 @@ bot.on('photo', async (msg) => {
 
   try {
     const user = await User.findOne({ telegramId });
-    
+
     if (!user || !user.isRegistered) {
       bot.sendMessage(chatId, 'Please register first to upload screenshots.');
       return;
@@ -603,7 +604,7 @@ bot.onText(/🌐 Open Fetan App/, async (msg) => {
 
   try {
     const user = await User.findOne({ telegramId });
-    
+
     if (!user || !user.isRegistered) {
       bot.sendMessage(chatId, 'Please register first to access the Fetan Design app.');
       return;
@@ -611,10 +612,10 @@ bot.onText(/🌐 Open Fetan App/, async (msg) => {
 
     // Generate a simple auth token (in production, use proper JWT)
     const authToken = Buffer.from(`${telegramId}_${Date.now()}`).toString('base64');
-    
+
     // Create webapp URL with auth parameters
     const webappUrl = `${process.env.WEBAPP_URL || 'https://your-repl-url.replit.app'}?telegram_id=${telegramId}&auth_token=${authToken}&telegram_username=${user.username || ''}&telegram_name=${encodeURIComponent(user.fullName)}`;
-    
+
     const keyboard = {
       reply_markup: {
         inline_keyboard: [
@@ -650,10 +651,11 @@ const mainMenuKeyboard = {
   reply_markup: {
     keyboard: [
       ['📋 Register', '💎 Subscriptions'],
-      ['🌐 Open Fetan App', '🖼️ Gallery'],
-      ['🛍️ Products', '🛒 My Cart'],
-      ['📦 My Orders', '👥 Refer Friends'],
-      ['ℹ️ Help', '📞 Contact']
+      ['🌐 Open Fetan App', '📰 Latest Posts'],
+      ['🖼️ Gallery', '🛍️ Products'],
+      ['🛒 My Cart', '📦 My Orders'],
+      ['👥 Refer Friends', 'ℹ️ Help'],
+      ['📞 Contact']
     ],
     resize_keyboard: true
   }
@@ -662,7 +664,7 @@ const mainMenuKeyboard = {
 // Handle help
 bot.onText(/ℹ️ Help/, (msg) => {
   const chatId = msg.chat.id;
-  
+
   const helpMessage = `
 ℹ️ Fetan Design Bot Help
 
@@ -677,14 +679,14 @@ bot.onText(/ℹ️ Help/, (msg) => {
 
 For support, contact our admin team.
   `;
-  
+
   bot.sendMessage(chatId, helpMessage, mainMenuKeyboard);
 });
 
 // Handle contact
 bot.onText(/📞 Contact/, (msg) => {
   const chatId = msg.chat.id;
-  
+
   const contactMessage = `
 📞 Contact Information
 
@@ -695,7 +697,7 @@ For support and inquiries:
 
 Business hours: Monday - Friday, 9 AM - 6 PM
   `;
-  
+
   bot.sendMessage(chatId, contactMessage, mainMenuKeyboard);
 });
 
@@ -705,4 +707,4 @@ module.exports = {
   handleUpdate: (update) => {
     bot.handleUpdate(update);
   }
-}; 
+};

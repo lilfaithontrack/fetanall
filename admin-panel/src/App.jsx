@@ -1,4 +1,3 @@
-
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
@@ -11,6 +10,7 @@ import Products from './pages/Products'
 import Orders from './pages/Orders'
 import Gallery from './pages/Gallery'
 import ProtectedRoute from './components/ProtectedRoute'
+import Posts from './pages/Posts'
 
 function App() {
   return (
@@ -30,6 +30,7 @@ function App() {
             <Route path="products" element={<Products />} />
             <Route path="orders" element={<Orders />} />
             <Route path="gallery" element={<Gallery />} />
+            <Route path="/posts" element={<Posts />} />
           </Route>
         </Routes>
       </Router>
