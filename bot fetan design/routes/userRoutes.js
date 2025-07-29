@@ -259,9 +259,26 @@ router.get('/telegram/:telegramId', async (req, res) => {
       return res.status(401).json({ error: 'Invalid authorization header' });
     }
 
-    // For now, we'll use a simple token verification
-    // In production, you should implement proper JWT token verification
+    // Simple token verification for telegram integration
     const token = authHeader.replace('Bearer ', '');
+    
+    // Verify the token format (base64 encoded telegramId_timestamp)
+    try {
+      const decoded = Buffer.from(token, 'base64').toString();
+      const [tokenTelegramId, timestamp] = decoded.split('_');
+      
+      if (tokenTelegramId !== telegramId) {
+        return res.status(401).json({ error: 'Invalid token for user' });
+      }
+      
+      // Check if token is not too old (24 hours)
+      const tokenAge = Date.now() - parseInt(timestamp);
+      if (tokenAge > 24 * 60 * 60 * 1000) {
+        return res.status(401).json({ error: 'Token expired' });
+      }
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid token format' });
+    }
     
     const user = await User.findOne({ telegramId })
       .populate('subscription')

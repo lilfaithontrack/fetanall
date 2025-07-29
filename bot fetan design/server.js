@@ -20,6 +20,7 @@ const agentRoutes = require('./routes/agentRoutes');
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const authRoutes = require('./routes/authRoutes');
+const telegramRoutes = require('./routes/telegramRoutes');
 
 // Import Telegram bot handlers
 const telegramBot = require('./telegram/bot');
@@ -27,7 +28,7 @@ const telegramBot = require('./telegram/bot');
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:4000', 'https://*.replit.dev', 'https://*.replit.app'],
+  origin: ['http://localhost:3000', 'http://localhost:4000', 'http://0.0.0.0:4000', 'https://*.replit.dev', 'https://*.replit.app'],
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -70,6 +71,7 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/agents', agentRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/telegram', telegramRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

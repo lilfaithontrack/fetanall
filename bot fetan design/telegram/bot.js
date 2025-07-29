@@ -8,7 +8,7 @@ const PaymentMethod = require('../models/PaymentMethod');
 const Coupon = require('../models/Coupon');
 const Agent = require('../models/Agent');
 
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: false });
+const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 
 // User states for conversation flow
 const userStates = new Map();
